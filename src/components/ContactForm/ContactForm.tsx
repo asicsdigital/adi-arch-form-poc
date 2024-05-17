@@ -1,5 +1,5 @@
-import React from 'react';
-import { FieldValues } from 'react-hook-form';
+import React, { useState } from 'react';
+import { FieldValues, set } from 'react-hook-form';
 import {
   Form,
   FormContent,
@@ -34,15 +34,47 @@ const contactFormDefaults: ContactFormInput = {
 
 export function ContactForm(props: ContactFormProps) {
   const { form, inputs } = props;
-  const onSubmit = (data: FieldValues) => console.log(data);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [message, setMessage] = useState<string>('');
+
+  const onSubmit = async (data: FieldValues) => {
+    // Todo: code modularization
+    setIsLoading(true);
+    try {
+      const res  =  await fetch('/api/sfcc', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+
+      const newdata = await res.json();
+      console.log('New Data', newdata);
+      setMessage("Case Created Successfully");
+    } catch (error) {
+      setMessage("An unexpected problem occured while creating case please try again later.");
+      console.error('An unexpected error occurred:', error);
+    } finally {
+
+      setIsLoading(false);
+
+      const timer = setTimeout(() => {
+        setMessage('');
+      }, 5000);
+
+      return () => clearTimeout(timer);
+    }
+  };
 
   return (
-    <Form {...form}>
-      <FormContent
-        defaultValues={contactFormDefaults}
-        inputs={inputs}
-        onSubmit={onSubmit}
-      />
-    </Form>
+    <>
+      <Form {...form}>
+        <FormContent
+          defaultValues={contactFormDefaults}
+          inputs={inputs}
+          onSubmit={onSubmit}
+        />
+      </Form>
+      {isLoading && <p>Loading...</p>}
+      {message && <p>{message}</p>}
+    </>
   );
-}
+}
